@@ -3,35 +3,29 @@
 rm(list=ls()) ## Limpiar el entorno de trabajo
 #1. Librerias----
 require(pacman)
-p_load(prophet,tidyverse,readxl) 
+p_load(prophet,tidyverse,readxl,openxlsx) 
        
-df  <-     
-m <- prophet(df)
+datos  <-  read.xlsx("Base_Datos_2018_Alejandro.xlsx",detectDates=T)  
+df<- datos %>% rename("ds" = "Fecha","y"="P_bolsa") %>% select("ds","y") 
+df$P_Henry_Hub <- datos$P_Henry_Hub
+df$Aporte_MH <- datos$"Aporte/MH"
+#df,daily.seasonality=TRUE
+m <- prophet(yearly.seasonality=TRUE)
+m = add_regressor(m, "P_Henry_Hub")
+m = add_regressor(m, "Aporte_MH")
+m <- fit.prophet(m, df)
 
-modelo_final <- add_regressor(m, name, prior.scale = NULL, standardize = "auto", mode = NULL)
+## Future Dataframe
+future <- make_future_dataframe(m, periods = 365, freq="days")
+future$P_Henry_Hub  <- df$P_Henry_Hub  
+future$Aporte_MH  <- df$Aporte_MH  
 
-g <- cross_validation(
-                modelo_final,
-                30,
-                "months",
-                period = 15,
-                initial = 40,
-                cutoffs = NULL
-              )
-
-
-cvresultados <- performance_metrics(g, metrics = NULL, rolling_window = 0.1) 
-
-plot_cross_validation_metric(cvresultados, metric, rolling_window = 0.1)
-
-       
-future <- make_future_dataframe(m, periods = 12, freq="month")
-tail(future)
 
 forecast <- predict(m, future)
 tail(forecast[c('ds', 'yhat', 'yhat_lower', 'yhat_upper')])
 
+# Print predictions
+cat("\nPredictions:\n")
+tail(future)
+
 plot(m, forecast)
-
-
-prophet_plot_components(m, forecast)
