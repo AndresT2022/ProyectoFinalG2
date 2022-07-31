@@ -1,25 +1,31 @@
 #Proyecto final
 #Script Consolidacion de datos y limpieza
 rm(list=ls()) ## Limpiar el entorno de trabajo
+getwd()
 #1. Librerias----
 require(pacman)
-p_load(prophet,tidyverse,readxl,openxlsx) 
+p_load(prophet,tidyverse,readxl,openxlsx,forecast) 
        
-datos  <-  read.xlsx("Base_Datos_2018_Alejandro.xlsx",detectDates=T)  
+datos  <-  read.xlsx("Base_Datos_2018_V5.xlsx",detectDates=T, sheet= "Hoja1")  
+datosfuturos <-read.xlsx("Base_Datos_2018_V5.xlsx",detectDates=T, sheet= "Future") 
+
+
 df<- datos %>% rename("ds" = "Fecha","y"="P_bolsa") %>% select("ds","y") 
 df$P_Henry_Hub <- datos$P_Henry_Hub
-df$Aporte_MH <- datos$"Aporte/MH"
+df$Aporte_MH <- datos$Por_Aporte_MH
+df$Cat_enso <- datos$Cat_enso
 #df,daily.seasonality=TRUE
-m <- prophet(yearly.seasonality=TRUE)
+m <- prophet(df,daily.seasonality=TRUE)
 m = add_regressor(m, "P_Henry_Hub")
 m = add_regressor(m, "Aporte_MH")
+m = add_regressor(m, "Cat_enso")
 m <- fit.prophet(m, df)
 
 ## Future Dataframe
-future <- make_future_dataframe(m, periods = 365, freq="days")
-future$P_Henry_Hub  <- df$P_Henry_Hub  
-future$Aporte_MH  <- df$Aporte_MH  
-
+future <- make_future_dataframe(m, periods = 365, freq="days", include_history = TRUE)
+future$P_Henry_Hub  <- datosfuturos$P_Henry_Hub   
+future$Aporte_MH  <- datosfuturos$Por_Aporte_MH  
+future$Cat_enso  <- datosfuturos$Cat_enso  
 
 forecast <- predict(m, future)
 tail(forecast[c('ds', 'yhat', 'yhat_lower', 'yhat_upper')])
