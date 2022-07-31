@@ -6,8 +6,8 @@ getwd()
 require(pacman)
 p_load(prophet,tidyverse,readxl,openxlsx,forecast) 
        
-datos  <-  read.xlsx("Base_Datos_2018_V5.xlsx",detectDates=T, sheet= "Hoja1")  
-datosfuturos <-read.xlsx("Base_Datos_2018_V5.xlsx",detectDates=T, sheet= "Future") 
+datos  <-  read.xlsx("Base_Datos_2018_V6.xlsx",detectDates=T, sheet= "Hoja1")  
+datosfuturos <-read.xlsx("Base_Datos_2018_V6.xlsx",detectDates=T, sheet= "Hoja3") 
 
 
 df<- datos %>% rename("ds" = "Fecha","y"="P_bolsa") %>% select("ds","y") 
@@ -15,7 +15,7 @@ df$P_Henry_Hub <- datos$P_Henry_Hub
 df$Aporte_MH <- datos$Por_Aporte_MH
 df$Cat_enso <- datos$Cat_enso
 #df,daily.seasonality=TRUE
-m <- prophet(df,daily.seasonality=TRUE)
+m <- prophet(daily.seasonality=TRUE)
 m = add_regressor(m, "P_Henry_Hub")
 m = add_regressor(m, "Aporte_MH")
 m = add_regressor(m, "Cat_enso")
@@ -34,4 +34,13 @@ tail(forecast[c('ds', 'yhat', 'yhat_lower', 'yhat_upper')])
 cat("\nPredictions:\n")
 tail(future)
 
-plot(m, forecast)
+plot(m, forecast) 
+
+prophet_plot_components(m, forecast)
+
+plot_forecast_component(m, forecast, 'P_Henry_Hub')
+
+plot_forecast_component(m, forecast, 'Cat_enso')
+
+
+plot_forecast_component(m, forecast, 'Aporte_MH')
